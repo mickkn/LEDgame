@@ -1,25 +1,32 @@
 #include <StopWatch.h>
 #include <stdio.h>
 #include <LiquidCrystal.h>
+#include "LedHC138.h"
 //#include <LiquidCrystal_SR.h>
+#include <Wire.h>
 
 //#define _debug_
 
-#define START      13
-#define NOB         3 // Number of Buttons and Leds
-#define testTone    11
+#define BUT_NUM 3 // Number of Buttons and Leds
+#define SPEAKER 11 // Speakerport PWM
 
-#define redBut      8
-#define blueBut     9
-//#define whiteBut    9
-//#define greenBut   6
-//#define yellowBut  7
+#define BUT_RED 7
+#define BUT_BLU 8
+#define BUT_WHI 9
+#define BUT_GRE 10
+#define BUT_YEL 12
 
-#define redLed     10
-#define blueLed    12
-//#define whiteLed   12
-//#define greenLed  10
-//#define yellowLed 11
+#define LED_RED 1
+#define LED_BLU 2
+#define LED_WHI 3
+#define LED_GRE 4
+#define LED_YEL 5
+#define LED_OFF 0  // LED OFF HACK
+
+const int PIN_A0 = 7;  // 74HC138 PIN A0
+const int PIN_A1 = 8;  // 74HC138 PIN A1
+const int PIN_A2 = 9;  // 74HC138 PIN A2
+LedHC138 led(PIN_A0, PIN_A1, PIN_A2);
 
 // LCD
 #define RS  0
@@ -55,172 +62,136 @@ int lastGameStatus = 0;
 int recordScore = 0;
 
 // myFunctions
-void myDelay(int delaytime);
+void myDelay(int delayMS);
 
 void setup() {
 
-  #ifdef _debug_
-    Serial.begin(9600);
-  #endif
+#ifdef _debug_
+  Serial.begin(9600);
+#endif
 
   lcd.begin(16, 2);
 
-  lcd.setCursor(0,0);
+  lcd.setCursor(0, 0);
   lcd.print("SPEEDZ by");
-  lcd.setCursor(0,1);
+  lcd.setCursor(0, 1);
   lcd.print("Mick Kirkegaard");
   delay(2000);
   lcd.clear();
-  lcd.setCursor(0,0);
+  lcd.setCursor(0, 0);
   lcd.print("SPEEDZ");
 
-  pinMode(START, INPUT);
-  pinMode(testTone, OUTPUT);
+  pinMode(PIN_A0, OUTPUT);
+  pinMode(PIN_A1, OUTPUT);
+  pinMode(PIN_A2, OUTPUT);
 
-  pinMode(redBut, INPUT);
-  pinMode(blueBut, INPUT);
-//  pinMode(whiteBut, INPUT);
-  //  pinMode(greenBut,INPUT);
-  //  pinMode(yellowBut,INPUT);
+  pinMode(SPEAKER, OUTPUT);
 
-  pinMode(redLed, OUTPUT);
-  pinMode(blueLed, OUTPUT);
-//  pinMode(whiteLed, OUTPUT);
-  //  pinMode(greenLed,OUTPUT);
-  //  pinMode(yellowLed,OUTPUT);
-
-  digitalWrite(redLed, LOW);
-  digitalWrite(blueLed, LOW);
-//  digitalWrite(whiteLed, LOW);
-  //  digitalWrite(greenLed,LOW);
-  //  digitalWrite(yellowLed,LOW);
+  pinMode(BUT_RED, INPUT);
+  pinMode(BUT_BLU, INPUT);
+  pinMode(BUT_WHI, INPUT);
+  pinMode(BUT_GRE, INPUT);
+  pinMode(BUT_YEL, INPUT);
 }
 
 void loop() {
   int pressed = B11111111;
-  
-  if (digitalRead(redBut))
+
+  if (digitalRead(BUT_RED))
     pressed = (pressed & B11111110);
-  if (digitalRead(blueBut))
+  if (digitalRead(BUT_BLU))
     pressed = (pressed & B11111101);
-//  if (digitalRead(whiteBut))
-//    pressed = (pressed & B11111011);
-  //  if(digitalRead(greenBut))
-  //    pressed = (pressed & B11110111);
-  //  if(digitalRead(yellowBut))
-  //    pressed = (pressed & B11101111);
+  if (digitalRead(BUT_WHI))
+    pressed = (pressed & B11111011);
+  if (digitalRead(BUT_GRE))
+    pressed = (pressed & B11110111);
+  if (digitalRead(BUT_YEL))
+    pressed = (pressed & B11101111);
 
   if (pressed == gameStatus) {
-    
-    // Change LED to something differnt
+    // Change gameStatus to something differnt
     lastGameStatus = gameStatus;
-    while(lastGameStatus == gameStatus)
-      gameStatus = (B11111111 &  ~(B00000001 << random(NOB)));
+    while (lastGameStatus == gameStatus)
+      gameStatus = (B11111111 &  ~(B00000001 << random(BUT_NUM)));
     lengthCounter--;
-    if(lengthCounter == 0)
+    if (lengthCounter == 0)
       recordScore = 1;
     //myDelay(100);
   }
-            // Debug
-            #ifdef _debug_
-            if (digitalRead(whiteBut)) {
-              Serial.print("\ngameLength= ");
-              Serial.print(gameLength);
-              Serial.print("\nlengthCounter= ");
-              Serial.print(lengthCounter);
-              Serial.print("\npressed= ");
-              Serial.print(pressed, BIN);
-              Serial.print("\ngameStatus= ");
-              Serial.print(gameStatus, BIN);
-              
-              delay(200);
-            } 
-            #endif
+
+  // Debug
+#ifdef _debug_
+  if (digitalRead(BUT_WHI)) {
+    Serial.print("\ngameLength= ");
+    Serial.print(gameLength);
+    Serial.print("\nlengthCounter= ");
+    Serial.print(lengthCounter);
+    Serial.print("\npressed= ");
+    Serial.print(pressed, BIN);
+    Serial.print("\ngameStatus= ");
+    Serial.print(gameStatus, BIN);
+
+    delay(200);
+  }
+#endif
 
   // Lights
-  if(lengthCounter > 0) {
+  if (lengthCounter > 0) {
     if (gameStatus == B11111110)
-      digitalWrite(redLed, HIGH);
-    else
-      digitalWrite(redLed, LOW);
+      led.on(LED_RED);
     if (gameStatus == B11111101)
-      digitalWrite(blueLed, HIGH);
-    else
-      digitalWrite(blueLed, LOW);
-//    if (gameStatus == B11111011)
-//      digitalWrite(whiteLed, HIGH);
-//    else
-//      digitalWrite(whiteLed, LOW);
-//  if (gameStatus == B11110111)
-//    digitalWrite(greenLed, HIGH);
-//  else
-//    digitalWrite(greenLed, LOW);
-//  if (gameStatus == B11101111)
-//    digitalWrite(yellowLed, HIGH);
-//  else
-//    digitalWrite(yellowLed, LOW);
+      led.on(LED_BLU);
+    if (gameStatus == B11111011)
+      led.on(LED_WHI);
+    if (gameStatus == B11110111)
+      led.on(LED_GRE);
+    if (gameStatus == B11101111)
+      led.on(LED_YEL);
   }
   else {
     lengthCounter = 0;
-    digitalWrite(redLed, LOW);
-    digitalWrite(blueLed, LOW);
-//    digitalWrite(whiteLed, LOW);
-//    digitalWrite(greenLed,LOW);
-//    digitalWrite(yellowLed,LOW);
-    
-    if (digitalRead(START)) {
+    led.on(LED_OFF);
+
+    if (digitalRead(BUT_RED)) {
       // START SEQUENCE
-        digitalWrite(redLed,HIGH);
-        digitalWrite(blueLed,HIGH);
-        tone(11, 500, 1000);
-//        digitalWrite(whiteLed,HIGH);
-//        digitalWrite(greenLed,HIGH);
-//        digitalWrite(yellowLed,HIGH);
-        delay(1000);
-        digitalWrite(redLed,LOW);
-        digitalWrite(blueLed,LOW);
-//        digitalWrite(whiteLed,LOW);
-//        digitalWrite(greenLed,LOW);
-//        digitalWrite(yellowLed,LOW);
-        delay(500);
-        digitalWrite(redLed,HIGH);
-        digitalWrite(blueLed,HIGH);
-        tone(11, 500, 1000);
-//        digitalWrite(whiteLed,HIGH);
-//        digitalWrite(greenLed,HIGH);
-//        digitalWrite(yellowLed,HIGH);
-        delay(1000);
-        digitalWrite(redLed,LOW);
-        digitalWrite(blueLed,LOW);
-//        digitalWrite(whiteLed,LOW);
-//        digitalWrite(greenLed,LOW);
-//        digitalWrite(yellowLed,LOW);
-        delay(500);
-        digitalWrite(redLed,HIGH);
-        digitalWrite(blueLed,HIGH);
-        tone(11, 500, 1000);
-//        digitalWrite(whiteLed,HIGH);
-//        digitalWrite(greenLed,HIGH);
-//        digitalWrite(yellowLed,HIGH);
-        delay(1000);
-        digitalWrite(redLed,LOW);
-        digitalWrite(blueLed,LOW);
-//        digitalWrite(whiteLed,LOW);
-//        digitalWrite(greenLed,LOW);
-//        digitalWrite(yellowLed,LOW);
-        delay(500);
-        tone(11, 1000, 1000);
-        delay(1000);
+      led.on(LED_RED);
+      led.on(LED_BLU);
+      led.on(LED_WHI);
+      led.on(LED_GRE);
+      led.on(LED_YEL);
+      tone(SPEAKER, 1000, 1000);
+      delay(1000);
+      led.on(LED_OFF);
+      delay(500);
+      led.on(LED_RED);
+      led.on(LED_BLU);
+      led.on(LED_WHI);
+      led.on(LED_GRE);
+      led.on(LED_YEL);
+      tone(SPEAKER, 1000, 1000);
+      delay(1000);
+      led.on(LED_OFF);
+      delay(500);
+      led.on(LED_RED);
+      led.on(LED_BLU);
+      led.on(LED_WHI);
+      led.on(LED_GRE);
+      led.on(LED_YEL);
+      delay(1000);
+      led.on(LED_OFF);
+      delay(500);
+      tone(SPEAKER, 1000, 1000);
+      delay(1000);
       swMilisecs.reset();
       swSeconds.reset();
       swMilisecs.start();
       swSeconds.start();
       lengthCounter = gameLength;
       recordScore = 0;
-      gameStatus = (B11111111 &  ~(B00000001 << random(NOB)));
+      gameStatus = (B11111111 &  ~(B00000001 << random(BUT_NUM)));
     }
   }
-  
+
   if (recordScore == 1) {
     swMilisecs.stop();
     swSeconds.stop();
@@ -300,15 +271,15 @@ void loop() {
   lcd.print("Hiscore:");
 }
 
-void myDelay(int delayTime) {
+void myDelay(int delayMS) {
   int currentTime = millis();
-  int breakTime = (currentTime + delayTime);
-  while(breakTime > currentTime) {
+  int breakTime = (currentTime + delayMS);
+  while (breakTime > currentTime) {
     currentTime = millis();
-    #ifdef _debug_
-      Serial.print('\n');
-      Serial.print(currentTime);
-    #endif
+#ifdef _debug_
+    Serial.print('\n');
+    Serial.print(currentTime);
+#endif
   }
 }
 
