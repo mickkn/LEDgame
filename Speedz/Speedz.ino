@@ -53,7 +53,7 @@ int minutesHiscore  = 99;
 int secondsHiscore  = 99;
 int hundredsHiscore = 99;
 
-int gameLength = 3;
+int gameLength = 10;
 int lengthCounter = B00000000;
 int gameStatus = B00000000;
 int lastGameStatus = 0;
@@ -108,9 +108,11 @@ void loop() {
     while (lastGameStatus == gameStatus)
       gameStatus = (B11111111 &  ~(B00000001 << random(BUT_NUM)));
     lengthCounter--;
-    if (lengthCounter == 0)
+    if (lengthCounter == 0) {
       recordScore = 1;
-    tone(SPEAKER, random(1000, 1500), 50);
+      gameStatus = B00000000;
+    }
+    tone(SPEAKER, random(800, 1700), 50);
   }
 
   // Lights
@@ -132,22 +134,79 @@ void loop() {
 
     if (digitalRead(BUT_RED) && digitalRead(BUT_BLU)) {
       // START SEQUENCE
+      tone(SPEAKER, 700, 500);
       led.on(LED_RED);
-      tone(SPEAKER, 500, 500);
-      delay(500);
-      led.on(LED_OFF);
-      delay(500);
-      led.on(LED_GRE);
-      tone(SPEAKER, 500, 500);
-      delay(500);
-      led.on(LED_OFF);
-      delay(500);
+      delay(50);
+      led.on(LED_BLU);
+      delay(50);
       led.on(LED_WHI);
-      tone(SPEAKER, 500, 500);
-      delay(500);
+      delay(50);
+      led.on(LED_GRE);
+      delay(50);
+      led.on(LED_YEL);
+      delay(50);
+      led.on(LED_YEL);
+      delay(50);
+      led.on(LED_GRE);
+      delay(50);
+      led.on(LED_WHI);
+      delay(50);
+      led.on(LED_BLU);
+      delay(50);
+      led.on(LED_RED);
+      delay(50);
       led.on(LED_OFF);
       delay(500);
-      tone(SPEAKER, 1000, 500);
+      
+      tone(SPEAKER, 700, 500);
+      led.on(LED_YEL);
+      delay(50);
+      led.on(LED_GRE);
+      delay(50);
+      led.on(LED_WHI);
+      delay(50);
+      led.on(LED_BLU);
+      delay(50);
+      led.on(LED_RED);
+      delay(50);
+      led.on(LED_RED);
+      delay(50);
+      led.on(LED_BLU);
+      delay(50);
+      led.on(LED_WHI);
+      delay(50);
+      led.on(LED_GRE);
+      delay(50);
+      led.on(LED_YEL);
+      delay(50);
+      led.on(LED_OFF);
+      delay(500);
+      
+      tone(SPEAKER, 700, 500);
+      led.on(LED_RED);
+      delay(50);
+      led.on(LED_BLU);
+      delay(50);
+      led.on(LED_WHI);
+      delay(50);
+      led.on(LED_GRE);
+      delay(50);
+      led.on(LED_YEL);
+      delay(50);
+      led.on(LED_YEL);
+      delay(50);
+      led.on(LED_GRE);
+      delay(50);
+      led.on(LED_WHI);
+      delay(50);
+      led.on(LED_BLU);
+      delay(50);
+      led.on(LED_RED);
+      delay(50);
+      led.on(LED_OFF);
+      delay(500);
+      
+      tone(SPEAKER, 1400, 500);
       delay(500);
       swMilisecs.reset();
       swSeconds.reset();
