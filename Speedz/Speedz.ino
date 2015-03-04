@@ -1,46 +1,46 @@
 #include <StopWatch.h>
 #include <stdio.h>
-#include <LiquidCrystal.h>
+//#include <LiquidCrystal.h>
 #include "LedHC138.h"
-//#include <LiquidCrystal_SR.h>
+#include <LiquidCrystal_SR_LCD3.h>
 #include <Wire.h>
 
-#define BUT_NUM 3 // Number of Buttons and Leds
+#define BUT_NUM 3  // Number of Buttons and Leds
 #define SPEAKER 11 // Speakerport PWM
 
-#define BUT_RED 10
-#define BUT_BLU 12
-#define BUT_WHI 13
-//#define BUT_GRE 10
-//#define BUT_YEL 12
+#define BUT_RED 0
+#define BUT_BLU 1
+#define BUT_WHI 2
+#define BUT_GRE 3
+#define BUT_YEL 4
 
 #define LED_RED 1
 #define LED_BLU 2
 #define LED_WHI 3
 #define LED_GRE 4
 #define LED_YEL 5
-#define LED_OFF 0  // LED OFF HACK
+#define LED_OFF 0  // LED-OFF HACK
 
-const int PIN_A0 = 7;  // 74HC138 PIN A0
-const int PIN_A1 = 8;  // 74HC138 PIN A1
-const int PIN_A2 = 9;  // 74HC138 PIN A2
-LedHC138 led(PIN_A0, PIN_A1, PIN_A2);
+const int LED_A0 = 5;  // 74HC138 PIN A0
+const int LED_A1 = 6;  // 74HC138 PIN A1
+const int LED_A2 = 7;  // 74HC138 PIN A2
+LedHC138 led(LED_A0, LED_A1, LED_A2);
 
 // LCD
-#define RS  0
-#define RW  1
-#define E   2
-#define D4  3
-#define D5  4
-#define D6  5
-#define D7  6
-LiquidCrystal lcd(RS, RW, E, D4, D5, D6, D7);
+//#define RS  0
+//#define RW  1
+//#define E   2
+//#define D4  3
+//#define D5  4
+//#define D6  5
+//#define D7  6
+//LiquidCrystal lcd(RS, RW, E, D4, D5, D6, D7);
 
 // LCD3
-//#define SRDATA  7
-//#define SRCLOCK 8
-//#define ENABLE  9
-//LiquidCrystal_SR_LCD3 lcd(SRDATA, SRCLOCK, ENABLE);
+#define SRDATA   8
+#define STROBE   9
+#define SRCLOCK 10
+LiquidCrystal_SR_LCD3 lcd(SRDATA, SRCLOCK, STROBE);
 
 StopWatch swMilisecs;
 StopWatch swSeconds(StopWatch::SECONDS);
@@ -61,9 +61,9 @@ int recordScore = 0;
 
 void setup() {
 
-  pinMode(PIN_A0, OUTPUT);
-  pinMode(PIN_A1, OUTPUT);
-  pinMode(PIN_A2, OUTPUT);
+  pinMode(LED_A0, OUTPUT);
+  pinMode(LED_A1, OUTPUT);
+  pinMode(LED_A2, OUTPUT);
 
   pinMode(SPEAKER, OUTPUT);
 
@@ -277,9 +277,14 @@ void loop() {
   }
 
   //LCD Stopwatch
-  lcd.setCursor(8, 0);
-  sprintf(minutesOutput, "%2u", ((swSeconds.elapsed() / 60) % 60));
-  lcd.print(minutesOutput);
+  int minOut;
+  lcd.setCursor(9, 0);
+  minOut = ((swSeconds.elapsed() / 60) % 60);
+  lcd.print(minOut);
+  if(minOut < 10) {
+    lcd.setCursor(8,0);
+    lcd.print("0");
+  }
   lcd.setCursor(10, 0);
   lcd.print(":");
 
