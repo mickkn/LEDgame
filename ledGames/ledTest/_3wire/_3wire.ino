@@ -2,9 +2,9 @@
 #include <LiquidCrystal_SR_LCD3.h>
 #include <Wire.h>
 
-#define srdata  10
-#define srclock 11
-#define enable  12
+#define srdata  8
+#define srclock 9
+#define enable  7
 
 LiquidCrystal_SR_LCD3 lcd(srdata,srclock,enable);
 
