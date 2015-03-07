@@ -43,7 +43,8 @@ int secondsHiscore  = 99;
 int hundredsHiscore = 99;
 
 // Game chooser
-static int menu_chooseGame = 1;
+static int menu_chooseGame = 0;
+static int menu_playIntro = 1;
 void menu(void);
 
 // Speedz variables
@@ -63,6 +64,15 @@ const int memoz_gre = 2;
 const int memoz_yel = 1;
 void memoz(void);
 
+// pickz variables
+int pickzLevel = 0;
+int pickzCorrect = 0;
+#define PICKZSTARTDELAY 1000
+int pickzDelay = PICKZSTARTDELAY;
+char pickzLevelOutput[10];
+void pickz(void);
+void pickzPress(void);
+
 void setup() {
 
   pinMode(LED_A0, OUTPUT);
@@ -80,27 +90,67 @@ void setup() {
   led.on(LED_OFF);
 
   lcd.begin(16, 2);
-
+  
   lcd.setCursor(0, 0);
   lcd.print("LED Games by");
   lcd.setCursor(0, 1);
   lcd.print("Mick Kirkegaard");
-  delay(2000);
+  delay(3000);
   lcd.clear();
 }
 
 void loop() {
   
   // Game chooser
-  if(!digitalRead(BUT_RED) || !digitalRead(BUT_BLU) || !digitalRead(BUT_WHI) || !digitalRead(BUT_GRE) || !digitalRead(BUT_YEL)) {
+  if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL)) {
+    detachInterrupt(0);
     menu_chooseGame = 0;
-    delay(100);
+    menu_playIntro = 1;
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("LED Games by");
+    lcd.setCursor(0, 1);
+    lcd.print("Mick Kirkegaard");
+    delay(3000);
   }
   if(menu_chooseGame == 0) {
     menu(); 
   }
   if(menu_chooseGame == 1) {
+    if(menu_playIntro == 1) {
+      lcd.setCursor(0, 0);
+      lcd.print("SPEEDZ by");
+      lcd.setCursor(0, 1);
+      lcd.print("Mick Kirkegaard");
+      delay(2000);
+      lcd.clear();
+      menu_playIntro = 0;
+    }
     speedz();
+  }
+  if(menu_chooseGame == 2) {
+    if(menu_playIntro == 1) {
+      lcd.setCursor(0, 0);
+      lcd.print("MEMOZ by");
+      lcd.setCursor(0, 1);
+      lcd.print("Mick Kirkegaard");
+      delay(2000);
+      lcd.clear();
+      menu_playIntro = 0;
+    }
+    memoz();
+  }
+  if(menu_chooseGame == 4) {
+    if(menu_playIntro == 1) {
+      lcd.setCursor(0, 0);
+      lcd.print("PICKZ by");
+      lcd.setCursor(0, 1);
+      lcd.print("Mick Kirkegaard");
+      delay(2000);
+      lcd.clear();
+      menu_playIntro = 0;
+    }
+    pickz();
   }
 
 }
@@ -297,12 +347,11 @@ void speedz() {
 
   //LCD Stopwatch
   lcd.setCursor(0,0);
-  lcd.print("SPEEDSZ ");
+  lcd.print("SPEEDZ ");
   
-  int minOut;
-  lcd.setCursor(9, 0);
-  minOut = ((swSeconds.elapsed() / 60) % 60);
-  lcd.print(minOut);
+  lcd.setCursor(8, 0);
+  sprintf(minutesOutput, "%2u", ((swSeconds.elapsed() / 60) % 60));
+  lcd.print(minutesOutput);
   lcd.setCursor(10, 0);
   lcd.print(":");
 
@@ -325,6 +374,96 @@ void memoz() {
   
   lcd.setCursor(0,0);
   lcd.print("MEMOZ  ");
+  
+}
+
+void pickz() {
+  attachInterrupt(0, pickzPress, LOW);
+
+  lcd.setCursor(0,0);
+  lcd.print("PICKZ  ");
+  lcd.setCursor(0,1);
+  lcd.print("Level: ");
+  
+  pickzCorrect = 0;
+  led.on(LED_RED);
+  delay(pickzDelay);
+  if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
+    detachInterrupt(0);
+  else
+    attachInterrupt(0, pickzPress, LOW);
+    
+  pickzCorrect = 0;
+  led.on(LED_GRE);
+  delay(pickzDelay);
+  if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
+    detachInterrupt(0);
+  else
+    attachInterrupt(0, pickzPress, LOW);
+    
+  pickzCorrect = 1;
+  led.on(LED_WHI);
+  delay(pickzDelay);
+  if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
+    detachInterrupt(0);
+  else
+    attachInterrupt(0, pickzPress, LOW);
+    
+  pickzCorrect = 0;
+  led.on(LED_BLU);
+  delay(pickzDelay);
+  if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
+    detachInterrupt(0);
+  else
+    attachInterrupt(0, pickzPress, LOW);
+    
+  pickzCorrect = 0;
+  led.on(LED_YEL);
+  delay(pickzDelay);
+  if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
+    detachInterrupt(0);
+  else
+    attachInterrupt(0, pickzPress, LOW);
+    
+  pickzCorrect = 0;
+  led.on(LED_BLU);
+  delay(pickzDelay);
+  if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
+    detachInterrupt(0);
+  else
+    attachInterrupt(0, pickzPress, LOW);
+    
+  pickzCorrect = 1;
+  led.on(LED_WHI);
+  delay(pickzDelay);
+  if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
+    detachInterrupt(0);
+  else
+    attachInterrupt(0, pickzPress, LOW);
+    
+  pickzCorrect = 0;
+  led.on(LED_GRE);
+  delay(pickzDelay);
+  
+}
+
+void pickzPress() {
+  detachInterrupt(0);
+  if(pickzCorrect == 1) {
+    pickzLevel = pickzLevel+1;
+    pickzDelay = (pickzDelay - (pickzDelay/20)); // Decrement with 5%
+    tone(SPEAKER, 1500,100);
+  }
+  else {
+    pickzLevel = 0;
+    pickzDelay = PICKZSTARTDELAY;
+    tone(SPEAKER, 100,1000);
+  }
+  lcd.setCursor(8,1);
+  sprintf(pickzLevelOutput,"%2d",pickzLevel);
+  lcd.print(pickzLevelOutput);
+  delay(1000);
+  //attachInterrupt(0, pickzPress, LOW);
 }
 
 void menu() {
@@ -332,11 +471,11 @@ void menu() {
   int breakTime;
   int delayTime = 1500;
   lcd.setCursor(0,0);
-  lcd.print("  CHOOSE GAME  ");
+  lcd.print("   PICK  GAME   ");
   
   if(menu_chooseGame == 0) {
     lcd.setCursor(0,1);
-    lcd.print("    SPEEDZ     ");
+    lcd.print("     SPEEDZ     ");
     currentTime = millis();
     breakTime = (currentTime + delayTime);
     while(currentTime < breakTime) {
@@ -344,18 +483,22 @@ void menu() {
       led.on(LED_RED);
       if(!digitalRead(BUT_RED)) {
         menu_chooseGame = 1;
+        lcd.clear();
         break;
       }
       if(!digitalRead(BUT_GRE)) {
         menu_chooseGame = 2;
+        lcd.clear();
         break;
       }
       if(!digitalRead(BUT_YEL)) {
         menu_chooseGame = 3;
+        lcd.clear();
         break;
       }
       if(!digitalRead(BUT_BLU)) {
         menu_chooseGame = 4;
+        lcd.clear();
         break;
       }
     }
@@ -363,7 +506,7 @@ void menu() {
   
   if(menu_chooseGame == 0) {
     lcd.setCursor(0,1);
-    lcd.print("    MEMOZ     ");
+    lcd.print("     MEMOZ     ");
     currentTime = millis();
     breakTime = (currentTime + delayTime);
     while(currentTime < breakTime) {
@@ -371,25 +514,29 @@ void menu() {
       led.on(LED_GRE);
       if(!digitalRead(BUT_RED)) {
         menu_chooseGame = 1;
+        lcd.clear();
         break;
       }
       if(!digitalRead(BUT_GRE)) {
         menu_chooseGame = 2;
+        lcd.clear();
         break;
       }
       if(!digitalRead(BUT_YEL)) {
         menu_chooseGame = 3;
+        lcd.clear();
         break;
       }
       if(!digitalRead(BUT_BLU)) {
         menu_chooseGame = 4;
+        lcd.clear();
         break;
       }
     }
   }
   if(menu_chooseGame == 0) {
     lcd.setCursor(0,1);
-    lcd.print("    TEST1     ");
+    lcd.print("     COMING..     ");
     currentTime = millis();
     breakTime = (currentTime + delayTime);
     while(currentTime < breakTime) {
@@ -397,18 +544,22 @@ void menu() {
       led.on(LED_YEL);
       if(!digitalRead(BUT_RED)) {
         menu_chooseGame = 1;
+        lcd.clear();
         break;
       }
       if(!digitalRead(BUT_GRE)) {
         menu_chooseGame = 2;
+        lcd.clear();
         break;
       }
       if(!digitalRead(BUT_YEL)) {
         menu_chooseGame = 3;
+        lcd.clear();
         break;
       }
       if(!digitalRead(BUT_BLU)) {
         menu_chooseGame = 4;
+        lcd.clear();
         break;
       }
     }
@@ -416,7 +567,7 @@ void menu() {
   
   if(menu_chooseGame == 0) {
     lcd.setCursor(0,1);
-    lcd.print("    TEST2     ");
+    lcd.print("     PICKZ     ");
     currentTime = millis();
     breakTime = (currentTime + delayTime);
     while(currentTime < breakTime) {
@@ -424,18 +575,22 @@ void menu() {
       led.on(LED_BLU);
       if(!digitalRead(BUT_RED)) {
         menu_chooseGame = 1;
+        lcd.clear();
         break;
       }
       if(!digitalRead(BUT_GRE)) {
         menu_chooseGame = 2;
+        lcd.clear();
         break;
       }
       if(!digitalRead(BUT_YEL)) {
         menu_chooseGame = 3;
+        lcd.clear();
         break;
       }
       if(!digitalRead(BUT_BLU)) {
         menu_chooseGame = 4;
+        lcd.clear();
         break;
       }
     }
