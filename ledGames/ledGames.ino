@@ -3,6 +3,7 @@
 #include "LedHC138.h"
 #include <LiquidCrystal_SR_LCD3.h>
 #include <Wire.h>
+#include <EEPROM.h>
 
 #define BUT_NUM 5  // Number of Buttons and Leds
 #define SPEAKER 6 // Speakerport PWM
@@ -34,25 +35,29 @@ LiquidCrystal_SR_LCD3 lcd(SRDATA, SRCLOCK, STROBE);
 StopWatch swMilisecs;
 StopWatch swSeconds(StopWatch::SECONDS);
 
-char minutesOutput[10];
-char secondsOutput[10];
-char hundredsOutput[10];
-
-int minutesHiscore  = 99;
-int secondsHiscore  = 99;
-int hundredsHiscore = 99;
-
 // Game chooser
 static int menu_chooseGame = 0;
 static int menu_playIntro = 1;
 void menu(void);
 
-// Speedz variables
+// speedz variables
 int speedz_gameLength = 30;
 int speedz_lengthCounter = B00000000;
 int speedz_gameStatus = B00000000;
 int speedz_lastGameStatus = 0;
 int speedz_recordScore = 0;
+char speedz_minutesOutput[10];
+char speedz_secondsOutput[10];
+char speedz_hundredsOutput[10];
+char speedz_minutesHiOut[10];
+char speedz_secondsHiOut[10];
+char speedz_hundredsHiOut[10];
+const int speedz_minHiAddr = 0;
+const int speedz_secHiAddr = 1;
+const int speedz_hunHiAddr = 2;
+int speedz_minutesHiscore = EEPROM.read(speedz_minHiAddr);
+int speedz_secondsHiscore = EEPROM.read(speedz_secHiAddr);
+int speedz_hundredsHiscore = EEPROM.read(speedz_hunHiAddr);
 void speedz(void);
 
 // memoz variables
@@ -65,13 +70,19 @@ const int memoz_yel = 1;
 void memoz(void);
 
 // pickz variables
-int pickzLevel = 0;
-int pickzCorrect = 0;
 #define PICKZSTARTDELAY 1000
-int pickzDelay = PICKZSTARTDELAY;
-char pickzLevelOutput[10];
+const int pickz_levelHiAddr = 3;
+int pickz_Level = 0;
+int pickz_Hiscore = EEPROM.read(pickz_levelHiAddr);
+int pickz_Correct = 0;
+int pickz_Delay = PICKZSTARTDELAY;
+char pickz_levelOutput[10];
+char pickz_levelHiOut[10];
 void pickz(void);
 void pickzPress(void);
+
+// clear hiscore
+void clearHiscore(void);
 
 void setup() {
 
@@ -95,7 +106,9 @@ void setup() {
   lcd.print("LED Games by");
   lcd.setCursor(0, 1);
   lcd.print("Mick Kirkegaard");
+  attachInterrupt(0,clearHiscore,LOW);
   delay(3000);
+  detachInterrupt(0);
   lcd.clear();
 }
 
@@ -200,7 +213,7 @@ void speedz() {
     speedz_lengthCounter = 0;
     led.on(LED_OFF);
 
-    if (!(digitalRead(BUT_WHI) || digitalRead(BUT_RED))) {
+    if (!digitalRead(BUT_WHI)) {
       // START SEQUENCE
       int startDelay = 50;
       tone(SPEAKER, 700, 500);
@@ -291,82 +304,66 @@ void speedz() {
     swMilisecs.stop();
     swSeconds.stop();
 
-    if (((swSeconds.elapsed() / 60) % 60) <= minutesHiscore) {
-      if (((swSeconds.elapsed() / 60) % 60) < minutesHiscore) {
-        // Print hi-score
-        lcd.setCursor(8, 1);
-        lcd.print(minutesOutput);
-        lcd.setCursor(10, 1);
-        lcd.print(":");
-        lcd.setCursor(11, 1);
-        lcd.print(secondsOutput);
-        lcd.setCursor(13, 1);
-        lcd.print(":");
-        lcd.setCursor(14, 1);
-        lcd.print(hundredsOutput);
-        minutesHiscore = ((swSeconds.elapsed() / 60) % 60);
-        secondsHiscore = (swSeconds.elapsed() % 60);
-        hundredsHiscore = (swMilisecs.elapsed() % 100) + 4;
+    if (((swSeconds.elapsed() / 60) % 60) <= speedz_minutesHiscore) {
+      if (((swSeconds.elapsed() / 60) % 60) < speedz_minutesHiscore) {
+        speedz_minutesHiscore = ((swSeconds.elapsed() / 60) % 60);
+        speedz_secondsHiscore = (swSeconds.elapsed() % 60);
+        speedz_hundredsHiscore = (swMilisecs.elapsed() % 100);
       }
-      else if ((swSeconds.elapsed() % 60) <= secondsHiscore) {
-        if ((swSeconds.elapsed() % 60) < secondsHiscore) {
-          // Print hi-score
-          lcd.setCursor(8, 1);
-          lcd.print(minutesOutput);
-          lcd.setCursor(10, 1);
-          lcd.print(":");
-          lcd.setCursor(11, 1);
-          lcd.print(secondsOutput);
-          lcd.setCursor(13, 1);
-          lcd.print(":");
-          lcd.setCursor(14, 1);
-          lcd.print(hundredsOutput);
-          minutesHiscore = ((swSeconds.elapsed() / 60) % 60);
-          secondsHiscore = (swSeconds.elapsed() % 60);
-          hundredsHiscore = (swMilisecs.elapsed() % 100) + 4;
+      else if ((swSeconds.elapsed() % 60) <= speedz_secondsHiscore) {
+        if ((swSeconds.elapsed() % 60) < speedz_secondsHiscore) {
+          speedz_minutesHiscore = ((swSeconds.elapsed() / 60) % 60);
+          speedz_secondsHiscore = (swSeconds.elapsed() % 60);
+          speedz_hundredsHiscore = (swMilisecs.elapsed() % 100);
         }
-        else if ((swMilisecs.elapsed() % 100) < hundredsHiscore) {
-          // Print hi-score
-          lcd.setCursor(8, 1);
-          lcd.print(minutesOutput);
-          lcd.setCursor(10, 1);
-          lcd.print(":");
-          lcd.setCursor(11, 1);
-          lcd.print(secondsOutput);
-          lcd.setCursor(13, 1);
-          lcd.print(":");
-          lcd.setCursor(14, 1);
-          lcd.print(hundredsOutput);
-          minutesHiscore = ((swSeconds.elapsed() / 60) % 60);
-          secondsHiscore = (swSeconds.elapsed() % 60);
-          hundredsHiscore = (swMilisecs.elapsed() % 100) + 4;
+        else if ((swMilisecs.elapsed() % 100) < speedz_hundredsHiscore) {
+          speedz_minutesHiscore = ((swSeconds.elapsed() / 60) % 60);
+          speedz_secondsHiscore = (swSeconds.elapsed() % 60);
+          speedz_hundredsHiscore = (swMilisecs.elapsed() % 100);
         }
       }
     }
   }
+
+  // Print hi-score
+  EEPROM.write(speedz_minHiAddr,speedz_minutesHiscore);
+  EEPROM.write(speedz_secHiAddr,speedz_secondsHiscore);
+  EEPROM.write(speedz_hunHiAddr,speedz_hundredsHiscore);
+  lcd.setCursor(0, 1);
+  lcd.print("Hiscore");
+  sprintf(speedz_minutesHiOut, "%2u", speedz_minutesHiscore);
+  sprintf(speedz_secondsHiOut, "%2u", speedz_secondsHiscore);
+  sprintf(speedz_hundredsHiOut, "%2u", speedz_hundredsHiscore);
+  lcd.setCursor(8, 1);
+  lcd.print(speedz_minutesHiOut);
+  lcd.setCursor(10, 1);
+  lcd.print(":");
+  lcd.setCursor(11, 1);
+  lcd.print(speedz_secondsHiOut);
+  lcd.setCursor(13, 1);
+  lcd.print(":");
+  lcd.setCursor(14, 1);
+  lcd.print(speedz_hundredsHiOut);
 
   //LCD Stopwatch
   lcd.setCursor(0,0);
   lcd.print("SPEEDZ ");
   
   lcd.setCursor(8, 0);
-  sprintf(minutesOutput, "%2u", ((swSeconds.elapsed() / 60) % 60));
-  lcd.print(minutesOutput);
+  sprintf(speedz_minutesOutput, "%2u", ((swSeconds.elapsed() / 60) % 60));
+  lcd.print(speedz_minutesOutput);
   lcd.setCursor(10, 0);
   lcd.print(":");
 
   lcd.setCursor(11, 0);
-  sprintf(secondsOutput, "%2u", (swSeconds.elapsed() % 60));
-  lcd.print(secondsOutput);
+  sprintf(speedz_secondsOutput, "%2u", (swSeconds.elapsed() % 60));
+  lcd.print(speedz_secondsOutput);
   lcd.setCursor(13, 0);
   lcd.print(":");
 
   lcd.setCursor(14, 0);
-  sprintf(hundredsOutput, "%2u", (swMilisecs.elapsed() % 100));
-  lcd.print(hundredsOutput);
-
-  lcd.setCursor(0, 1);
-  lcd.print("Hiscore:");
+  sprintf(speedz_hundredsOutput, "%2u", (swMilisecs.elapsed() % 100));
+  lcd.print(speedz_hundredsOutput);
 }
 
 void memoz() {
@@ -380,90 +377,117 @@ void memoz() {
 void pickz() {
   attachInterrupt(0, pickzPress, LOW);
 
+  lcd.setCursor(13,0);
+  sprintf(pickz_levelOutput,"%2d",pickz_Level);
+  lcd.print(pickz_levelOutput);
+  lcd.setCursor(13,1);
+  sprintf(pickz_levelHiOut,"%2d",pickz_Hiscore);
+  lcd.print(pickz_levelHiOut);
+
   lcd.setCursor(0,0);
-  lcd.print("PICKZ  ");
+  lcd.print("PICKZ   Lvl:");
   lcd.setCursor(0,1);
-  lcd.print("Level: ");
+  lcd.print("       HiSc:");
   
-  pickzCorrect = 0;
+  pickz_Correct = 0;
   led.on(LED_RED);
-  delay(pickzDelay);
+  delay(pickz_Delay);
   if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
     detachInterrupt(0);
   else
     attachInterrupt(0, pickzPress, LOW);
     
-  pickzCorrect = 0;
+  pickz_Correct = 0;
   led.on(LED_GRE);
-  delay(pickzDelay);
+  delay(pickz_Delay);
   if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
     detachInterrupt(0);
   else
     attachInterrupt(0, pickzPress, LOW);
     
-  pickzCorrect = 1;
+  pickz_Correct = 1;
   led.on(LED_WHI);
-  delay(pickzDelay);
+  delay(pickz_Delay);
   if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
     detachInterrupt(0);
   else
     attachInterrupt(0, pickzPress, LOW);
     
-  pickzCorrect = 0;
+  pickz_Correct = 0;
   led.on(LED_BLU);
-  delay(pickzDelay);
+  delay(pickz_Delay);
   if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
     detachInterrupt(0);
   else
     attachInterrupt(0, pickzPress, LOW);
     
-  pickzCorrect = 0;
+  pickz_Correct = 0;
   led.on(LED_YEL);
-  delay(pickzDelay);
+  delay(pickz_Delay);
   if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
     detachInterrupt(0);
   else
     attachInterrupt(0, pickzPress, LOW);
     
-  pickzCorrect = 0;
+  pickz_Correct = 0;
   led.on(LED_BLU);
-  delay(pickzDelay);
+  delay(pickz_Delay);
   if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
     detachInterrupt(0);
   else
     attachInterrupt(0, pickzPress, LOW);
     
-  pickzCorrect = 1;
+  pickz_Correct = 1;
   led.on(LED_WHI);
-  delay(pickzDelay);
+  delay(pickz_Delay);
   if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
     detachInterrupt(0);
   else
     attachInterrupt(0, pickzPress, LOW);
     
-  pickzCorrect = 0;
+  pickz_Correct = 0;
   led.on(LED_GRE);
-  delay(pickzDelay);
+  delay(pickz_Delay);
   
 }
 
 void pickzPress() {
   detachInterrupt(0);
-  if(pickzCorrect == 1) {
-    pickzLevel = pickzLevel+1;
-    pickzDelay = (pickzDelay - (pickzDelay/20)); // Decrement with 5%
+  if(pickz_Correct == 1) {
+    pickz_Level = pickz_Level+1;
+    pickz_Delay = (pickz_Delay - (pickz_Delay/20)); // Decrement with 5%
     tone(SPEAKER, 1500,100);
   }
   else {
-    pickzLevel = 0;
-    pickzDelay = PICKZSTARTDELAY;
+    pickz_Level = 0;
+    pickz_Delay = PICKZSTARTDELAY;
     tone(SPEAKER, 100,1000);
   }
-  lcd.setCursor(8,1);
-  sprintf(pickzLevelOutput,"%2d",pickzLevel);
-  lcd.print(pickzLevelOutput);
+  lcd.setCursor(13,0);
+  sprintf(pickz_levelOutput,"%2d",pickz_Level);
+  lcd.print(pickz_levelOutput);
+  if(pickz_Level > pickz_Hiscore) {
+    pickz_Hiscore = pickz_Level;
+    lcd.setCursor(13,1);
+    sprintf(pickz_levelHiOut,"%2d",pickz_Hiscore);
+    lcd.print(pickz_levelHiOut);
+    EEPROM.write(pickz_levelHiAddr,pickz_Hiscore);
+  }
   delay(1000);
   //attachInterrupt(0, pickzPress, LOW);
+}
+
+void clearHiscore() {
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Clearing");
+  lcd.setCursor(0,1   );
+  lcd.print("all hi-scores...");
+  EEPROM.write(speedz_minHiAddr,99);
+  EEPROM.write(speedz_secHiAddr,99);
+  EEPROM.write(speedz_hunHiAddr,99);
+  EEPROM.write(pickz_levelHiAddr,0);
+  delay(4000);
 }
 
 void menu() {
