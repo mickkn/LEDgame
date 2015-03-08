@@ -5,20 +5,20 @@
 #include <Wire.h>
 #include <EEPROM.h>
 
-#define BUT_NUM 5  // Number of Buttons and Leds
-#define SPEAKER 6 // Speakerport PWM
+#define BUT_NUM 5  // Number of BUTTONS and LEDS
+#define SPEAKER 6  // Speakerport PWM
 
-#define BUT_RED 0
-#define BUT_BLU 1
-#define BUT_WHI 2
-#define BUT_GRE 3
-#define BUT_YEL 4
+#define BUT_RED 0  // Red Button pin
+#define BUT_BLU 1  // Blue Button pin
+#define BUT_WHI 2  // White Button pin
+#define BUT_GRE 3  // Green Button pin
+#define BUT_YEL 4  // Yellow Button pin
 
-#define LED_RED 4
-#define LED_BLU 5
-#define LED_WHI 3
-#define LED_GRE 2
-#define LED_YEL 1
+#define LED_RED 4  // Red LED number (not pin)
+#define LED_BLU 5  // Blue LED number (not pin)
+#define LED_WHI 3  // White LED number (not pin)
+#define LED_GRE 2  // Green LED number (not pin)
+#define LED_YEL 1  // Yellow LED number (not pin)
 #define LED_OFF 0  // LED-OFF HACK
 
 const int LED_A0 = 12;  // 74HC138 PIN A0
@@ -27,20 +27,19 @@ const int LED_A2 = 10;  // 74HC138 PIN A2
 LedHC138 led(LED_A0, LED_A1, LED_A2);
 
 // LCD3
-#define SRDATA  8
-#define STROBE  7
-#define SRCLOCK 9
+#define SRDATA  8  // HEF4094 Data pin
+#define STROBE  7  // HEF4094 Strobe pin
+#define SRCLOCK 9  // HEF4094 Clock pin
 LiquidCrystal_SR_LCD3 lcd(SRDATA, SRCLOCK, STROBE);
 
-StopWatch swMilisecs;
-StopWatch swSeconds(StopWatch::SECONDS);
-
-// Game chooser
+// menu variables
+// -----------------------------------
 static int menu_chooseGame = 0;
 static int menu_playIntro = 1;
 void menu(void);
 
 // speedz variables
+// -----------------------------------
 int speedz_gameLength = 30;
 int speedz_lengthCounter = B00000000;
 int speedz_gameStatus = B00000000;
@@ -59,8 +58,11 @@ int speedz_minutesHiscore = EEPROM.read(speedz_minHiAddr);
 int speedz_secondsHiscore = EEPROM.read(speedz_secHiAddr);
 int speedz_hundredsHiscore = EEPROM.read(speedz_hunHiAddr);
 void speedz(void);
+StopWatch swMilisecs;
+StopWatch swSeconds(StopWatch::SECONDS);
 
 // memoz variables
+// -----------------------------------
 int memozArray[42];
 const int memoz_blu = 5;
 const int memoz_red = 4;
@@ -70,6 +72,7 @@ const int memoz_yel = 1;
 void memoz(void);
 
 // pickz variables
+// -----------------------------------
 #define PICKZSTARTDELAY 1000
 const int pickz_levelHiAddr = 3;
 int pickz_Level = 0;
@@ -82,10 +85,17 @@ void pickz(void);
 void pickzPress(void);
 
 // clear hiscore
+// -----------------------------------
 void clearHiscore(void);
 
-void setup() {
+// *******************************************
+/*
+  Setup
+*/
+// *******************************************
 
+void setup() {
+  
   pinMode(LED_A0, OUTPUT);
   pinMode(LED_A1, OUTPUT);
   pinMode(LED_A2, OUTPUT);
@@ -106,15 +116,21 @@ void setup() {
   lcd.print("LED Games by");
   lcd.setCursor(0, 1);
   lcd.print("Mick Kirkegaard");
-  attachInterrupt(0,clearHiscore,LOW);
+  attachInterrupt(0,clearHiscore,LOW);  // Clear hiscore interrupt on BUT_WHI
   delay(3000);
   detachInterrupt(0);
   lcd.clear();
 }
 
+// *******************************************
+/*
+  Loop
+*/
+// *******************************************
+
 void loop() {
   
-  // Game chooser
+  // Pick a Game
   if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL)) {
     detachInterrupt(0);
     menu_chooseGame = 0;
@@ -168,6 +184,13 @@ void loop() {
 
 }
 
+// *******************************************
+/*
+  Speedz - Code for the multitask reflex game Speedz
+  Created by Mick Kirkegaard 2015.
+*/
+// *******************************************
+
 void speedz() {
   int pressed = B11111111;
 
@@ -189,7 +212,7 @@ void speedz() {
     while (speedz_lastGameStatus == speedz_gameStatus)
       speedz_gameStatus = (B11111111 &  ~(B00000001 << random(BUT_NUM)));
     speedz_lengthCounter--;
-    if (speedz_lengthCounter == 0) {
+    if (speedz_lengthCounter == 0) {
       speedz_recordScore = 1;
       speedz_gameStatus = B00000000;
     }
@@ -299,7 +322,8 @@ void speedz() {
       speedz_gameStatus = (B11111111 &  ~(B00000001 << random(BUT_NUM)));
     }
   }
-
+  
+  // Determine Hi-score
   if ((speedz_recordScore == 1) && (speedz_lengthCounter == 0)) {
     swMilisecs.stop();
     swSeconds.stop();
@@ -325,7 +349,7 @@ void speedz() {
     }
   }
 
-  // Print hi-score
+  // Print Hi-score
   EEPROM.write(speedz_minHiAddr,speedz_minutesHiscore);
   EEPROM.write(speedz_secHiAddr,speedz_secondsHiscore);
   EEPROM.write(speedz_hunHiAddr,speedz_hundredsHiscore);
@@ -366,6 +390,13 @@ void speedz() {
   lcd.print(speedz_hundredsOutput);
 }
 
+// *******************************************
+/*
+  Memoz - Code for the Simon Says-like game Memoz
+  Created by Mick Kirkegaard 2015.
+*/
+// *******************************************
+
 void memoz() {
   
   
@@ -373,6 +404,13 @@ void memoz() {
   lcd.print("MEMOZ  ");
   
 }
+
+// *******************************************
+/*
+  Pickz - Code for the reflex game Pickz
+  Created by Mick Kirkegaard 2015.
+*/
+// *******************************************
 
 void pickz() {
   attachInterrupt(0, pickzPress, LOW);
@@ -477,6 +515,13 @@ void pickzPress() {
   //attachInterrupt(0, pickzPress, LOW);
 }
 
+// *******************************************
+/*
+  Clear the hiscore (working on introscreen)
+  Created by Mick Kirkegaard 2015.
+*/ 
+// *******************************************
+
 void clearHiscore() {
   lcd.clear();
   lcd.setCursor(0,0);
@@ -489,6 +534,13 @@ void clearHiscore() {
   EEPROM.write(pickz_levelHiAddr,0);
   delay(4000);
 }
+
+// *******************************************
+/*
+  Menu for picking the Gamemode
+  Created by Mick Kirkegaard 2015.
+*/ 
+// *******************************************
 
 void menu() {
   int currentTime;
