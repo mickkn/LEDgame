@@ -8,6 +8,7 @@
 
 #define BUT_NUM 5  // Number of BUTTONS and LEDS
 #define SPEAKER 6  // Speakerport PWM
+#define BACKLIGHT A5 // Backligt brigthness
 
 #define BUT_RED 0  // Red Button pin
 #define BUT_BLU 1  // Blue Button pin
@@ -65,13 +66,7 @@ StopWatch swSeconds(StopWatch::SECONDS);
 // memoz variables
 // -----------------------------------
 #define MEMOZSIZE 100
-int memoz_gameSequence[MEMOZSIZE];
-int memoz_makeNewSequence = 1;
-int memoz_currentLocation;
-int memoz_sequenceLength;
-int memoz_playSequence;
-int memoz_gameEnd;
-int memoz_nextLocation;
+
 const int memoz_redTone = NOTE_C4;
 const int memoz_bluTone = NOTE_D4;
 const int memoz_whiTone = NOTE_E4;
@@ -246,8 +241,7 @@ void speedz() {
   else {
     speedz_lengthCounter = 0;
     led.on(LED_WHI);
-    delay(20);
-    led.on(LED_RED);
+    // make sound
 
     if (!digitalRead(BUT_WHI)) {
       // START SEQUENCE
@@ -332,6 +326,7 @@ void speedz() {
       swSeconds.start();
       speedz_lengthCounter = speedz_gameLength;
       speedz_recordScore = 0;
+      randomSeed(millis());
       speedz_gameStatus = (B11111111 &  ~(B00000001 << random(BUT_NUM)));
     }
   }
@@ -414,118 +409,18 @@ void memoz() {
   
   lcd.setCursor(0,0);
   lcd.print("MEMOZ");
+
+  // if makeNewSequence = 1
+  // make random sequenceArray with for-loop
   
-  const int memoz_pushDelay = 2000;
+  // if currentLocation >= gameLength
+  // play sequenceArray of gameLength
+  // currentLocation = 0
   
-  // Fill array with random numbers one time
-  if(memoz_makeNewSequence == 1) {
-    for(int i = 0 ; i < MEMOZSIZE ; i++) {
-      memoz_gameSequence[i] = random(1,5);
-    }
-    memoz_makeNewSequence = 0;
-    memoz_currentLocation = 1;
-    memoz_sequenceLength = 1;
-    memoz_playSequence = 1;
-  }
   
-  // if end of sequence, play from the start
-  if(memoz_playSequence == 1) {
-    memoz_currentLocation = 0;
-    for(int i = 0 ; i < memoz_sequenceLength ; i++) {
-      if(memoz_gameSequence[i] == 1) {
-        led.on(LED_RED);
-        tone(SPEAKER,memoz_redTone,memoz_toneLength);
-      }
-      else if(memoz_gameSequence[i] == 2) {
-        led.on(LED_BLU);
-        tone(SPEAKER,memoz_bluTone,memoz_toneLength);
-      }
-      else if(memoz_gameSequence[i] == 3) {
-        led.on(LED_WHI);
-        tone(SPEAKER,memoz_whiTone,memoz_toneLength);
-      }   
-      else if(memoz_gameSequence[i] == 4) {
-        led.on(LED_GRE);
-        tone(SPEAKER,memoz_greTone,memoz_toneLength);
-      }   
-      else if(memoz_gameSequence[i] == 5) {
-        led.on(LED_YEL);
-        tone(SPEAKER,memoz_yelTone,memoz_toneLength);
-      }   
-      delay(1000);
-    }
-    memoz_playSequence = 0;
-    led.on(LED_OFF);
-  }
-  
-  // Stay in loop until correct or incorrect buttonpush
-  while(memoz_gameEnd == 0 || memoz_nextLocation == 1) {
-    if(memoz_gameSequence[memoz_currentLocation] == 1) {
-      if(!digitalRead(BUT_RED)) {
-        tone(SPEAKER,memoz_redTone,memoz_toneLength);
-        led.on(BUT_RED);
-        delay(memoz_pushDelay);
-        break;
-      }
-      else if(!digitalRead(BUT_BLU) || !digitalRead(BUT_WHI) || !digitalRead(BUT_GRE) || !digitalRead(BUT_YEL)) {
-        memoz_gameEnd = 1;
-      }  
-    }
-    else if(memoz_gameSequence[memoz_currentLocation] == 2) {
-      if(!digitalRead(BUT_BLU)) {
-        tone(SPEAKER,memoz_bluTone,memoz_toneLength);
-        led.on(BUT_BLU);
-        delay(memoz_pushDelay);
-        break;
-      }
-      else if(!digitalRead(BUT_RED) || !digitalRead(BUT_WHI) || !digitalRead(BUT_GRE) || !digitalRead(BUT_YEL)) {
-        memoz_gameEnd = 1;
-      } 
-    }
-    else if(memoz_gameSequence[memoz_currentLocation] == 3) {
-      if(!digitalRead(BUT_WHI)) {
-        tone(SPEAKER,memoz_whiTone,memoz_toneLength);
-        led.on(BUT_WHI);
-        delay(memoz_pushDelay);
-        break;
-      }
-      else if(!digitalRead(BUT_BLU) || !digitalRead(BUT_RED) || !digitalRead(BUT_GRE) || !digitalRead(BUT_YEL)) {
-        memoz_gameEnd = 1;
-      } 
-    }
-    else if(memoz_gameSequence[memoz_currentLocation] == 4) {
-      if(!digitalRead(BUT_GRE)) {
-        tone(SPEAKER,memoz_greTone,memoz_toneLength);
-        led.on(BUT_GRE);
-        delay(memoz_pushDelay);
-        break;
-      }
-      else if(!digitalRead(BUT_BLU) || !digitalRead(BUT_WHI) || !digitalRead(BUT_RED) || !digitalRead(BUT_YEL)) {
-        memoz_gameEnd = 1;
-      } 
-    }
-    else if(memoz_gameSequence[memoz_currentLocation] == 5) {
-      if(!digitalRead(BUT_YEL)) {
-        tone(SPEAKER,memoz_yelTone,memoz_toneLength);
-        led.on(BUT_YEL);
-        delay(memoz_pushDelay);
-        break;
-      }
-      else if(!digitalRead(BUT_BLU) || !digitalRead(BUT_WHI) || !digitalRead(BUT_GRE) || !digitalRead(BUT_RED)) {
-        memoz_gameEnd = 1;
-      } 
-    }
-  }
-  if(memoz_gameEnd == 0)
-    memoz_currentLocation++;
-    if(memoz_currentLocation >= memoz_sequenceLength) {
-      memoz_sequenceLength++;
-      memoz_playSequence = 1;
-    }
-  else {
-    memoz_makeNewSequence = 1;
-    tone(SPEAKER,NOTE_AS1,2000);
-  }
+
+
+
 }
 
 // *******************************************
