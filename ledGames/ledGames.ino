@@ -3,36 +3,43 @@
 #include <LiquidCrystal_SR_LCD3.h>
 #include <Wire.h>
 #include <EEPROM.h>
-#include "LedHC138.h"
 #include "pitches.h"
 
-#define BUT_NUM 5  // Number of BUTTONS and LEDS
-#define SPEAKER 6  // Speakerport PWM
-#define BACKLIGHT A5 // Backligt brigthness
+#define BUT_NUM  5  // Number of BUTTONS and LEDS
+#define SPEAKER  3  // Speakerport PWM
+#define BCKLGHT A1  // Backligt strength Active low
 
-#define BUT_RED 0  // Red Button pin
-#define BUT_BLU 1  // Blue Button pin
-#define BUT_WHI 2  // White Button pin
-#define BUT_GRE 3  // Green Button pin
-#define BUT_YEL 4  // Yellow Button pin
+// hardware pins
+// -----------------------------------
+#define BUT_RED  8  // Red Button pin
+#define BUT_BLU  9  // Blue Button pin
+#define BUT_WHI  2  // White Button pin INT0
+#define BUT_YEL 12  // Yellow Button pin
+#define BUT_GRE 11  // Green Button pin
 
-#define LED_RED 4  // Red LED number (not pin)
-#define LED_BLU 5  // Blue LED number (not pin)
-#define LED_WHI 3  // White LED number (not pin)
-#define LED_GRE 2  // Green LED number (not pin)
-#define LED_YEL 1  // Yellow LED number (not pin)
-#define LED_OFF 0  // LED-OFF HACK
+#define LED_RED A0  // Red LED pin
+#define LED_BLU A2  // Blue LED pin
+#define LED_WHI A4  // White LED pin
+#define LED_GRE A5  // Green LED pin
+#define LED_YEL A3  // Yellow LED pin
+char ledChar[5] = {LED_RED,LED_BLU,LED_WHI,LED_GRE,LED_YEL};
 
-const int LED_A0 = 12;  // 74HC138 PIN A0
-const int LED_A1 = 11;  // 74HC138 PIN A1
-const int LED_A2 = 10;  // 74HC138 PIN A2
-LedHC138 led(LED_A0, LED_A1, LED_A2);
-
-// LCD3
-#define SRDATA  8  // HEF4094 Data pin
+// LCD3 (3 wire LCD)
+// -----------------------------------
+#define SRDATA  6  // HEF4094 Data pin
 #define STROBE  7  // HEF4094 Strobe pin
-#define SRCLOCK 9  // HEF4094 Clock pin
-LiquidCrystal_SR_LCD3 lcd(SRDATA, SRCLOCK, STROBE);
+#define SRCLCK  5  // HEF4094 Clock pin
+LiquidCrystal_SR_LCD3 lcd(SRDATA, SRCLCK, STROBE);
+
+// danish LCD characters
+// -----------------------------------
+byte newChar0[8] = { B10000,B01000,B00100,B00010,B00001,B00010,B00100,B00000}; // >
+byte Lae[8] = { B00000,B00000,B11010,B00101,B01111,B10100,B11111,B00000}; // æ
+byte Loe[8] = { B00000,B00001,B01110,B10101,B10101,B01110,B10000,B00000}; // ø
+byte Laa[8] = { B00100,B00000,B01110,B00001,B01111,B10001,B01111,B00000}; // å
+byte Sae[8] = { B01111,B10100,B10100,B11110,B10100,B10100,B10111,B00000}; // Æ
+byte Soe[8] = { B01110,B10011,B10101,B10101,B10101,B11001,B01110,B00000}; // Ø
+byte Saa[8] = { B00100,B00000,B01110,B10001,B11111,B10001,B10001,B00000}; // Å
 
 // menu variables
 // -----------------------------------
@@ -42,11 +49,12 @@ void menu(void);
 
 // speedz variables
 // -----------------------------------
-int speedz_gameLength = 1;
+int speedz_gameLength = 30;
 int speedz_lengthCounter = B00000000;
 int speedz_gameStatus = B00000000;
 int speedz_lastGameStatus = 0;
 int speedz_recordScore = 0;
+char speedz_tones[6] = {NOTE_C6,NOTE_D6,NOTE_E6,NOTE_F6,NOTE_G6,NOTE_A6};
 char speedz_minutesOutput[10];
 char speedz_secondsOutput[10];
 char speedz_hundredsOutput[10];
@@ -88,9 +96,10 @@ char pickz_levelHiOut[10];
 void pickz(void);
 void pickzPress(void);
 
-// clear hiscore
+// other functions
 // -----------------------------------
 void clearHiscore(void);
+void ledOff(void);
 
 // *******************************************
 /*
@@ -100,24 +109,33 @@ void clearHiscore(void);
 
 void setup() {
   
-  pinMode(LED_A0, OUTPUT);
-  pinMode(LED_A1, OUTPUT);
-  pinMode(LED_A2, OUTPUT);
+  pinMode(LED_RED, OUTPUT);
+  pinMode(LED_BLU, OUTPUT);
+  pinMode(LED_WHI, OUTPUT);
+  pinMode(LED_YEL, OUTPUT);
+  pinMode(LED_GRE, OUTPUT);
+  ledOff();
 
   pinMode(SPEAKER, OUTPUT);
+  pinMode(BCKLGHT, OUTPUT);
 
-  pinMode(BUT_RED, INPUT);
-  pinMode(BUT_BLU, INPUT);
-  pinMode(BUT_WHI, INPUT);
-  pinMode(BUT_GRE, INPUT);
-  pinMode(BUT_YEL, INPUT);
-
-  led.on(LED_OFF);
-
+  pinMode(BUT_RED, INPUT_PULLUP);
+  pinMode(BUT_BLU, INPUT_PULLUP);
+  pinMode(BUT_WHI, INPUT_PULLUP);
+  pinMode(BUT_GRE, INPUT_PULLUP);
+  pinMode(BUT_YEL, INPUT_PULLUP);
+  
   lcd.begin(16, 2);
+  lcd.createChar(0, newChar0); // upload 8 selvdef. karakterer
+  lcd.createChar(1, Lae); // æ
+  lcd.createChar(2, Loe); // ø
+  lcd.createChar(3, Laa); // å
+  lcd.createChar(4, Sae); // Æ
+  lcd.createChar(5, Soe); // Ø
+  lcd.createChar(6, Saa); // Å
   
   lcd.setCursor(0, 0);
-  lcd.print("LED Games by");
+  lcd.print("LED-spil af");
   lcd.setCursor(0, 1);
   lcd.print("Mick Kirkegaard");
   attachInterrupt(0,clearHiscore,LOW);  // Clear hiscore interrupt on BUT_WHI
@@ -133,7 +151,7 @@ void setup() {
 // *******************************************
 
 void loop() {
-  
+    analogWrite(BCKLGHT,0);
   // Pick a Game
   if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL)) {
     detachInterrupt(0);
@@ -141,7 +159,7 @@ void loop() {
     menu_playIntro = 1;
     lcd.clear();
     lcd.setCursor(0, 0);
-    lcd.print("LED Games by");
+    lcd.print("LED-spil af");
     lcd.setCursor(0, 1);
     lcd.print("Mick Kirkegaard");
     delay(3000);
@@ -152,7 +170,7 @@ void loop() {
   if(menu_chooseGame == 1) {
     if(menu_playIntro == 1) {
       lcd.setCursor(0, 0);
-      lcd.print("SPEEDZ by");
+      lcd.print("SPEEDZ af");
       lcd.setCursor(0, 1);
       lcd.print("Mick Kirkegaard");
       delay(2000);
@@ -164,7 +182,7 @@ void loop() {
   if(menu_chooseGame == 2) {
     if(menu_playIntro == 1) {
       lcd.setCursor(0, 0);
-      lcd.print("MEMOZ by");
+      lcd.print("MEMOZ af");
       lcd.setCursor(0, 1);
       lcd.print("Mick Kirkegaard");
       delay(2000);
@@ -176,7 +194,7 @@ void loop() {
   if(menu_chooseGame == 4) {
     if(menu_playIntro == 1) {
       lcd.setCursor(0, 0);
-      lcd.print("PICKZ by");
+      lcd.print("PICKZ af");
       lcd.setCursor(0, 1);
       lcd.print("Mick Kirkegaard");
       delay(2000);
@@ -217,105 +235,61 @@ void speedz() {
       speedz_gameStatus = (B11111111 &  ~(B00000001 << random(BUT_NUM)));
     speedz_lengthCounter--;
     
-    tone(SPEAKER, random(800, 1500), 80); // Press-tone
+    tone(SPEAKER, speedz_tones[random(0, 5)], 200); // Press-tone
     
     if (speedz_lengthCounter == 0) {
       speedz_recordScore = 1;
       speedz_gameStatus = B00000000;
+      ledOff();
+      tone(SPEAKER, NOTE_C3, 1000);
     }
   }
 
   // Lights
   if (speedz_lengthCounter > 0) {
     if (speedz_gameStatus == B11111110)
-      led.on(LED_RED);
+      digitalWrite(LED_RED, LOW);
+    else
+      digitalWrite(LED_RED, HIGH);
     if (speedz_gameStatus == B11111101)
-      led.on(LED_BLU);
+      digitalWrite(LED_BLU, LOW);
+    else
+      digitalWrite(LED_BLU, HIGH);
     if (speedz_gameStatus == B11111011)
-      led.on(LED_WHI);
+      digitalWrite(LED_WHI, LOW);
+    else
+      digitalWrite(LED_WHI, HIGH);
     if (speedz_gameStatus == B11110111)
-      led.on(LED_GRE);
+      digitalWrite(LED_GRE, LOW);
+    else
+      digitalWrite(LED_GRE, HIGH);
     if (speedz_gameStatus == B11101111)
-      led.on(LED_YEL);
+      digitalWrite(LED_YEL, LOW);
+    else
+      digitalWrite(LED_YEL, HIGH);
   }
   else {
     speedz_lengthCounter = 0;
-    led.on(LED_WHI);
+    digitalWrite(LED_WHI, LOW);
     // make sound
 
     if (!digitalRead(BUT_WHI)) {
       // START SEQUENCE
       int startDelay = 50;
+
       tone(SPEAKER, 700, 500);
-      led.on(LED_RED);
-      delay(startDelay);
-      led.on(LED_BLU);
-      delay(startDelay);
-      led.on(LED_WHI);
-      delay(startDelay);
-      led.on(LED_GRE);
-      delay(startDelay);
-      led.on(LED_YEL);
-      delay(startDelay);
-      led.on(LED_YEL);
-      delay(startDelay);
-      led.on(LED_GRE);
-      delay(startDelay);
-      led.on(LED_WHI);
-      delay(startDelay);
-      led.on(LED_BLU);
-      delay(startDelay);
-      led.on(LED_RED);
-      delay(startDelay);
-      led.on(LED_OFF);
+      // LAV SEKVENS HER
+      delay(startDelay * 10);
       delay(500);
       
       tone(SPEAKER, 700, 500);
-      led.on(LED_YEL);
-      delay(startDelay);
-      led.on(LED_GRE);
-      delay(startDelay);
-      led.on(LED_WHI);
-      delay(startDelay);
-      led.on(LED_BLU);
-      delay(startDelay);
-      led.on(LED_RED);
-      delay(startDelay);
-      led.on(LED_RED);
-      delay(startDelay);
-      led.on(LED_BLU);
-      delay(startDelay);
-      led.on(LED_WHI);
-      delay(startDelay);
-      led.on(LED_GRE);
-      delay(startDelay);
-      led.on(LED_YEL);
-      delay(startDelay);
-      led.on(LED_OFF);
+      // LAV SEKVENS HER
+      delay(startDelay * 10);
       delay(500);
       
       tone(SPEAKER, 700, 500);
-      led.on(LED_RED);
-      delay(startDelay);
-      led.on(LED_BLU);
-      delay(startDelay);
-      led.on(LED_WHI);
-      delay(startDelay);
-      led.on(LED_GRE);
-      delay(startDelay);
-      led.on(LED_YEL);
-      delay(startDelay);
-      led.on(LED_YEL);
-      delay(startDelay);
-      led.on(LED_GRE);
-      delay(startDelay);
-      led.on(LED_WHI);
-      delay(startDelay);
-      led.on(LED_BLU);
-      delay(startDelay);
-      led.on(LED_RED);
-      delay(startDelay);
-      led.on(LED_OFF);
+      // LAV SEKVENS HER
+      delay(startDelay * 10);
       delay(500);
       
       tone(SPEAKER, 1400, 500);
@@ -446,65 +420,72 @@ void pickz() {
   lcd.print("       HiSc:");
   
   pickz_Correct = 0;
-  led.on(LED_RED);
+  digitalWrite(LED_RED, LOW);
   delay(pickz_Delay);
   if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
     detachInterrupt(0);
   else
     attachInterrupt(0, pickzPress, LOW);
+  digitalWrite(LED_RED, HIGH);
     
   pickz_Correct = 0;
-  led.on(LED_GRE);
+  digitalWrite(LED_GRE, LOW);
   delay(pickz_Delay);
   if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
     detachInterrupt(0);
   else
     attachInterrupt(0, pickzPress, LOW);
-    
-  pickz_Correct = 1;
-  led.on(LED_WHI);
-  delay(pickz_Delay);
-  if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
-    detachInterrupt(0);
-  else
-    attachInterrupt(0, pickzPress, LOW);
-    
-  pickz_Correct = 0;
-  led.on(LED_BLU);
-  delay(pickz_Delay);
-  if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
-    detachInterrupt(0);
-  else
-    attachInterrupt(0, pickzPress, LOW);
-    
-  pickz_Correct = 0;
-  led.on(LED_YEL);
-  delay(pickz_Delay);
-  if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
-    detachInterrupt(0);
-  else
-    attachInterrupt(0, pickzPress, LOW);
-    
-  pickz_Correct = 0;
-  led.on(LED_BLU);
-  delay(pickz_Delay);
-  if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
-    detachInterrupt(0);
-  else
-    attachInterrupt(0, pickzPress, LOW);
-    
-  pickz_Correct = 1;
-  led.on(LED_WHI);
-  delay(pickz_Delay);
-  if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
-    detachInterrupt(0);
-  else
-    attachInterrupt(0, pickzPress, LOW);
-    
-  pickz_Correct = 0;
-  led.on(LED_GRE);
-  delay(pickz_Delay);
+  digitalWrite(LED_GRE, HIGH);
   
+  pickz_Correct = 1;
+  digitalWrite(LED_WHI, LOW);
+  delay(pickz_Delay);
+  if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
+    detachInterrupt(0);
+  else
+    attachInterrupt(0, pickzPress, LOW);
+  digitalWrite(LED_WHI, HIGH);
+  
+  pickz_Correct = 0;
+  digitalWrite(LED_BLU, LOW);
+  delay(pickz_Delay);
+  if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
+    detachInterrupt(0);
+  else
+    attachInterrupt(0, pickzPress, LOW);
+  digitalWrite(LED_BLU, HIGH);
+  
+  pickz_Correct = 0;
+  digitalWrite(LED_YEL, LOW);
+  delay(pickz_Delay);
+  if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
+    detachInterrupt(0);
+  else
+    attachInterrupt(0, pickzPress, LOW);
+  digitalWrite(LED_YEL, HIGH);
+  
+  pickz_Correct = 0;
+  digitalWrite(LED_BLU, LOW);
+  delay(pickz_Delay);
+  if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
+    detachInterrupt(0);
+  else
+    attachInterrupt(0, pickzPress, LOW);
+  digitalWrite(LED_BLU, HIGH);
+  
+  pickz_Correct = 1;
+  digitalWrite(LED_WHI, LOW);
+  delay(pickz_Delay);
+  if((((!digitalRead(BUT_RED) && !digitalRead(BUT_BLU)) && !digitalRead(BUT_WHI)) && !digitalRead(BUT_GRE)) && !digitalRead(BUT_YEL))
+    detachInterrupt(0);
+  else
+    attachInterrupt(0, pickzPress, LOW);
+  digitalWrite(LED_WHI, HIGH);
+  
+  pickz_Correct = 0;
+  digitalWrite(LED_GRE, LOW);
+  delay(pickz_Delay);
+  digitalWrite(LED_GRE, HIGH);  
 }
 
 void pickzPress() {
@@ -543,9 +524,9 @@ void pickzPress() {
 void clearHiscore() {
   lcd.clear();
   lcd.setCursor(0,0);
-  lcd.print("Clearing");
+  lcd.print("Sletter");
   lcd.setCursor(0,1   );
-  lcd.print("all hi-scores...");
+  lcd.print("alle hi-scores...");
   EEPROM.write(speedz_minHiAddr,99);
   EEPROM.write(speedz_secHiAddr,99);
   EEPROM.write(speedz_hunHiAddr,99);
@@ -555,7 +536,19 @@ void clearHiscore() {
 
 // *******************************************
 /*
-  Menu for picking the Gamemode
+  Turn off all LEDs
+  Created by Mick Kirkegaard 2015.
+*/ 
+// *******************************************
+
+void ledOff(void) {
+  for(int i = 0 ; i < 5 ; i++)
+    digitalWrite(ledChar[i], HIGH);
+}
+
+// *******************************************
+/*
+  Menu system for picking the Gamemode
   Created by Mick Kirkegaard 2015.
 */ 
 // *******************************************
@@ -565,7 +558,12 @@ void menu() {
   int breakTime;
   int delayTime = 1500;
   lcd.setCursor(0,0);
-  lcd.print("   PICK  GAME   ");
+  lcd.print("  V");
+  lcd.setCursor(3,0);
+  lcd.write(4);
+  lcd.setCursor(4,0);
+  lcd.print("LG ET SPIL  ");
+
   
   if(menu_chooseGame == 0) {
     lcd.setCursor(0,1);
@@ -574,7 +572,7 @@ void menu() {
     breakTime = (currentTime + delayTime);
     while(currentTime < breakTime) {
       currentTime = millis();
-      led.on(LED_RED);
+      digitalWrite(LED_RED, LOW);
       if(!digitalRead(BUT_RED)) {
         menu_chooseGame = 1;
         lcd.clear();
@@ -596,6 +594,7 @@ void menu() {
         break;
       }
     }
+    digitalWrite(LED_RED, HIGH);
   }
   
   if(menu_chooseGame == 0) {
@@ -605,7 +604,7 @@ void menu() {
     breakTime = (currentTime + delayTime);
     while(currentTime < breakTime) {
       currentTime = millis();
-      led.on(LED_GRE);
+      digitalWrite(LED_GRE, LOW);
       if(!digitalRead(BUT_RED)) {
         menu_chooseGame = 1;
         lcd.clear();
@@ -627,15 +626,16 @@ void menu() {
         break;
       }
     }
+    digitalWrite(LED_GRE, HIGH);
   }
   if(menu_chooseGame == 0) {
     lcd.setCursor(0,1);
-    lcd.print("     COMING..     ");
+    lcd.print("     KOMMER..     ");
     currentTime = millis();
     breakTime = (currentTime + delayTime);
     while(currentTime < breakTime) {
       currentTime = millis();
-      led.on(LED_YEL);
+      digitalWrite(LED_YEL, LOW);
       if(!digitalRead(BUT_RED)) {
         menu_chooseGame = 1;
         lcd.clear();
@@ -657,6 +657,7 @@ void menu() {
         break;
       }
     }
+    digitalWrite(LED_YEL, HIGH);
   }
   
   if(menu_chooseGame == 0) {
@@ -666,7 +667,7 @@ void menu() {
     breakTime = (currentTime + delayTime);
     while(currentTime < breakTime) {
       currentTime = millis();
-      led.on(LED_BLU);
+      digitalWrite(LED_BLU, LOW);
       if(!digitalRead(BUT_RED)) {
         menu_chooseGame = 1;
         lcd.clear();
@@ -688,6 +689,7 @@ void menu() {
         break;
       }
     }
+    digitalWrite(LED_BLU, HIGH);
   }
 }
 
