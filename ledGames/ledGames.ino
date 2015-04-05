@@ -54,7 +54,7 @@ int speedz_lengthCounter = B00000000;
 int speedz_gameStatus = B00000000;
 int speedz_lastGameStatus = 0;
 int speedz_recordScore = 0;
-char speedz_tones[6] = {NOTE_C6,NOTE_D6,NOTE_E6,NOTE_F6,NOTE_G6,NOTE_A6};
+int speedz_tones[6] = {NOTE_C6,NOTE_D6,NOTE_E6,NOTE_F6,NOTE_G6,NOTE_A6};
 char speedz_minutesOutput[10];
 char speedz_secondsOutput[10];
 char speedz_hundredsOutput[10];
@@ -74,14 +74,28 @@ StopWatch swSeconds(StopWatch::SECONDS);
 // memoz variables
 // -----------------------------------
 #define MEMOZSIZE 100
-
+#define M_RED 1
+#define M_BLU 2
+#define M_WHI 3
+#define M_GRE 4
+#define M_YEL 5
+int memoz_seqArray[MEMOZSIZE];
 const int memoz_redTone = NOTE_C4;
 const int memoz_bluTone = NOTE_D4;
 const int memoz_whiTone = NOTE_E4;
 const int memoz_greTone = NOTE_F4;
 const int memoz_yelTone = NOTE_G4;
+const int memoz_goTone = NOTE_G2;
 const int memoz_toneLength = 500;
+int memoz_makeNewSeq = 1;
+int memoz_curLoc = 0;
+int memoz_curGameLen = 1;
+int memoz_playSequence = 1;
+int memoz_playGame = 0;
 void memoz(void);
+void memoz_makeSeq(void);
+void memoz_playSeq(void);
+void memoz_pressSeq(void);
 
 // pickz variables
 // -----------------------------------
@@ -100,6 +114,7 @@ void pickzPress(void);
 // -----------------------------------
 void clearHiscore(void);
 void ledOff(void);
+
 
 // *******************************************
 /*
@@ -157,6 +172,8 @@ void loop() {
     detachInterrupt(0);
     menu_chooseGame = 0;
     menu_playIntro = 1;
+    speedz_recordScore = 1;
+    speedz_lengthCounter = 0;
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("LED-spil af");
@@ -235,13 +252,13 @@ void speedz() {
       speedz_gameStatus = (B11111111 &  ~(B00000001 << random(BUT_NUM)));
     speedz_lengthCounter--;
     
-    tone(SPEAKER, speedz_tones[random(0, 5)], 200); // Press-tone
+    tone(SPEAKER, speedz_tones[random(0, 5)], 300); // Press-tone
     
     if (speedz_lengthCounter == 0) {
       speedz_recordScore = 1;
       speedz_gameStatus = B00000000;
       ledOff();
-      tone(SPEAKER, NOTE_C3, 1000);
+      tone(SPEAKER, NOTE_C3, 1500);
     }
   }
 
@@ -379,22 +396,171 @@ void speedz() {
 */
 // *******************************************
 
-void memoz() {
+void memoz(void) {
   
   lcd.setCursor(0,0);
   lcd.print("MEMOZ");
 
-  // if makeNewSequence = 1
-  // make random sequenceArray with for-loop
+  if(memoz_playGame == 0) {
+    digitalWrite(LED_WHI, LOW);
+    memoz_curLoc = 0;
+    memoz_makeNewSeq = 1;
+    memoz_playSequence = 1;
+    memoz_curGameLen = 1;
+    if(!digitalRead(BUT_WHI)) {
+      memoz_playGame = 1;
+      ledOff();
+    }
+  }
+  else {
+    if(memoz_makeNewSeq == 1) {
+      memoz_makeSeq();
+      memoz_makeNewSeq = 0;
+    }
+    
+    if(memoz_playSequence == 1) {
+      memoz_curLoc = 0;
+      memoz_playSeq();
+      memoz_playSequence = 0; 
+    }
+    /*
+    if(!digitalRead(BUT_RED))
+      memoz_makeNewSeq = 1;
+      
+    if(!digitalRead(BUT_WHI))
+      memoz_playSequence = 1;
+  */
   
-  // if currentLocation >= gameLength
-  // play sequenceArray of gameLength
-  // currentLocation = 0
+    memoz_pressSeq();
+  }
+
+}
+
+void memoz_pressSeq(void) {
+  if(!digitalRead(BUT_RED)) {
+    if(memoz_seqArray[memoz_curLoc] == M_RED) {
+      tone(SPEAKER,memoz_redTone,memoz_toneLength);
+      digitalWrite(LED_RED, LOW);
+      delay(memoz_toneLength);
+      ledOff();
+      memoz_curLoc++;
+    }
+    else
+      tone(SPEAKER,memoz_goTone,memoz_toneLength);
+      delay(memoz_toneLength);
+      memoz_playGame = 0;
+  }  
+  if(!digitalRead(BUT_BLU)) {
+    if(memoz_seqArray[memoz_curLoc] == M_BLU) {
+      tone(SPEAKER,memoz_bluTone,memoz_toneLength);
+      digitalWrite(LED_BLU, LOW);
+      delay(memoz_toneLength);
+      ledOff();
+      memoz_curLoc++;
+    }
+    else
+      tone(SPEAKER,memoz_goTone,memoz_toneLength);
+      delay(memoz_toneLength);
+      memoz_playGame = 0;
+  }
+  if(!digitalRead(BUT_WHI)) {
+    if(memoz_seqArray[memoz_curLoc] == M_WHI) {
+      tone(SPEAKER,memoz_whiTone,memoz_toneLength);
+      digitalWrite(LED_WHI, LOW);
+      delay(memoz_toneLength);
+      ledOff();
+      memoz_curLoc++;
+    }
+    else
+      tone(SPEAKER,memoz_goTone,memoz_toneLength);
+      delay(memoz_toneLength);
+      memoz_playGame = 0;
+  }
+  if(!digitalRead(BUT_GRE)) {
+    if(memoz_seqArray[memoz_curLoc] == M_GRE) {
+      tone(SPEAKER,memoz_greTone,memoz_toneLength);
+      digitalWrite(LED_GRE, LOW);
+      delay(memoz_toneLength);
+      ledOff();
+      memoz_curLoc++;
+    }
+    else
+      tone(SPEAKER,memoz_goTone,memoz_toneLength);
+      delay(memoz_toneLength);
+      memoz_playGame = 0;
+  }
+  if(!digitalRead(BUT_YEL)) {
+    if(memoz_seqArray[memoz_curLoc] == M_YEL) {
+      tone(SPEAKER,memoz_yelTone,memoz_toneLength);
+      digitalWrite(LED_YEL, LOW);
+      delay(memoz_toneLength);
+      ledOff();
+      memoz_curLoc++;
+    }
+    else
+      tone(SPEAKER,memoz_goTone,memoz_toneLength);
+      delay(memoz_toneLength);
+      memoz_playGame = 0;
+  }
   
+  if(memoz_curLoc == memoz_curGameLen) {
+    memoz_curGameLen++;
+    memoz_playSequence = 1;
+    memoz_curLoc = 0;
+  }
+}
+
+void memoz_playSeq(void) {
   
+  ledOff();
+  
+  while(memoz_curLoc < memoz_curGameLen) {
+    if(memoz_seqArray[memoz_curLoc] == M_RED) {
+      tone(SPEAKER,memoz_redTone,memoz_toneLength);
+      digitalWrite(LED_RED,LOW);
+      delay(memoz_toneLength);
+      ledOff();
+      delay(memoz_toneLength);
+    }
+    if(memoz_seqArray[memoz_curLoc] == M_BLU) {
+      tone(SPEAKER,memoz_bluTone,memoz_toneLength);
+      digitalWrite(LED_BLU,LOW);
+      delay(memoz_toneLength);
+      ledOff();
+      delay(memoz_toneLength);
+    }
+    if(memoz_seqArray[memoz_curLoc] == M_WHI) {
+      tone(SPEAKER,memoz_whiTone,memoz_toneLength);
+      digitalWrite(LED_WHI,LOW);
+      delay(memoz_toneLength);
+      ledOff();
+      delay(memoz_toneLength);
+    }
+    if(memoz_seqArray[memoz_curLoc] == M_GRE) {
+      tone(SPEAKER,memoz_greTone,memoz_toneLength);
+      digitalWrite(LED_GRE,LOW);
+      delay(memoz_toneLength);
+      ledOff();
+      delay(memoz_toneLength);
+    }
+    if(memoz_seqArray[memoz_curLoc] == M_YEL) {
+      tone(SPEAKER,memoz_yelTone,memoz_toneLength);
+      digitalWrite(LED_YEL,LOW);
+      delay(memoz_toneLength);
+      ledOff();
+      delay(memoz_toneLength);
+    }
+    memoz_curLoc++;
+  }
+}
 
+void memoz_makeSeq(void) {
 
-
+  randomSeed(millis());
+  
+  for(int i = 0 ; i < MEMOZSIZE ; i++) {
+    memoz_seqArray[i] = random(1,5);  
+  }
 }
 
 // *******************************************
