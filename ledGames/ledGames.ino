@@ -5,6 +5,8 @@
 #include <EEPROM.h>
 #include "pitches.h"
 
+#define DEBUG 1
+
 #define BUT_NUM  5  // Number of BUTTONS and LEDS
 #define SPEAKER  3  // Speakerport PWM
 #define BCKLGHT A1  // Backligt strength Active low
@@ -47,6 +49,13 @@ static int menu_chooseGame = 0;
 static int menu_playIntro = 1;
 void menu(void);
 
+// EEPROM Addresses
+
+#define speedz_minHiAddr  4
+#define speedz_secHiAddr  5
+#define speedz_hunHiAddr  6
+#define pickz_levelHiAddr 7
+
 // speedz variables
 // -----------------------------------
 int speedz_gameLength = 30;
@@ -61,9 +70,6 @@ char speedz_hundredsOutput[10];
 char speedz_minutesHiOut[10];
 char speedz_secondsHiOut[10];
 char speedz_hundredsHiOut[10];
-const int speedz_minHiAddr = 0;
-const int speedz_secHiAddr = 1;
-const int speedz_hunHiAddr = 2;
 int speedz_minutesHiscore = EEPROM.read(speedz_minHiAddr);
 int speedz_secondsHiscore = EEPROM.read(speedz_secHiAddr);
 int speedz_hundredsHiscore = EEPROM.read(speedz_hunHiAddr);
@@ -100,7 +106,6 @@ void memoz_pressSeq(void);
 // pickz variables
 // -----------------------------------
 #define PICKZSTARTDELAY 1000
-const int pickz_levelHiAddr = 3;
 int pickz_Level = 0;
 int pickz_Hiscore = EEPROM.read(pickz_levelHiAddr);
 int pickz_Correct = 0;
@@ -157,6 +162,7 @@ void setup() {
   delay(3000);
   detachInterrupt(0);
   lcd.clear();
+  if(DEBUG)Serial.begin(115200);
 }
 
 // *******************************************
@@ -221,6 +227,14 @@ void loop() {
     pickz();
   }
 
+  if(DEBUG)Serial.write("Hiscores:\n");
+  if(DEBUG)Serial.write("Speedz: ");
+  if(DEBUG)Serial.write(EEPROM.read(speedz_minHiAddr));
+  if(DEBUG)Serial.write(":");
+  if(DEBUG)Serial.write(EEPROM.read(speedz_secHiAddr));
+  if(DEBUG)Serial.write(":");
+  if(DEBUG)Serial.write(EEPROM.read(speedz_hunHiAddr));
+  if(DEBUG)Serial.write("\n");
 }
 
 // *******************************************
@@ -697,6 +711,8 @@ void clearHiscore() {
   EEPROM.write(speedz_secHiAddr,99);
   EEPROM.write(speedz_hunHiAddr,99);
   EEPROM.write(pickz_levelHiAddr,0);
+  if(DEBUG)Serial.write("Sletter hiscores");
+  if(DEBUG)Serial.write(EEPROM.read(speedz_minHiAddr));
   delay(4000);
 }
 
