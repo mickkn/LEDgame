@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <LiquidCrystal_SR_LCD3.h>
 #include <Wire.h>
-#include <EEPROM.h>
+//#include <EEPROM.h>
 #include "pitches.h"
 
 #define DEBUG 1
