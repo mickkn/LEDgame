@@ -1,3 +1,5 @@
+/* Arduino Nano */
+
 #include <StopWatch.h>
 #include <stdio.h>
 #include <LiquidCrystal_SR_LCD3.h>
@@ -7,8 +9,8 @@
 
 #define DEBUG 1
 
-#define BUT_NUM  5  // Number of BUTTONS and LEDS
-#define SPEAKER  3  // Speakerport PWM
+#define BUT_NUM  5  // Number of BUTTONS and LEDS (5)
+#define SPEAKER  3  // Speakerport PWM (3)
 #define BCKLGHT A1  // Backligt strength Active low
 
 // hardware pins
@@ -70,9 +72,9 @@ char speedz_hundredsOutput[10];
 char speedz_minutesHiOut[10];
 char speedz_secondsHiOut[10];
 char speedz_hundredsHiOut[10];
-int speedz_minutesHiscore = EEPROM.read(speedz_minHiAddr);
-int speedz_secondsHiscore = EEPROM.read(speedz_secHiAddr);
-int speedz_hundredsHiscore = EEPROM.read(speedz_hunHiAddr);
+int speedz_minutesHiscore = 59;//EEPROM.read(speedz_minHiAddr);
+int speedz_secondsHiscore = 59;//EEPROM.read(speedz_secHiAddr);
+int speedz_hundredsHiscore = 99;//EEPROM.read(speedz_hunHiAddr);
 void speedz(void);
 StopWatch swMilisecs;
 StopWatch swSeconds(StopWatch::SECONDS);
@@ -107,7 +109,7 @@ void memoz_pressSeq(void);
 // -----------------------------------
 #define PICKZSTARTDELAY 1000
 int pickz_Level = 0;
-int pickz_Hiscore = EEPROM.read(pickz_levelHiAddr);
+int pickz_Hiscore = 0;//EEPROM.read(pickz_levelHiAddr);
 int pickz_Correct = 0;
 int pickz_Delay = PICKZSTARTDELAY;
 char pickz_levelOutput[10];
@@ -229,11 +231,11 @@ void loop() {
 
   if(DEBUG)Serial.write("Hiscores:\n");
   if(DEBUG)Serial.write("Speedz: ");
-  if(DEBUG)Serial.write(EEPROM.read(speedz_minHiAddr));
+  //if(DEBUG)Serial.write(EEPROM.read(speedz_minHiAddr));
   if(DEBUG)Serial.write(":");
-  if(DEBUG)Serial.write(EEPROM.read(speedz_secHiAddr));
+  //if(DEBUG)Serial.write(EEPROM.read(speedz_secHiAddr));
   if(DEBUG)Serial.write(":");
-  if(DEBUG)Serial.write(EEPROM.read(speedz_hunHiAddr));
+  //if(DEBUG)Serial.write(EEPROM.read(speedz_hunHiAddr));
   if(DEBUG)Serial.write("\n");
 }
 
@@ -363,9 +365,9 @@ void speedz() {
   }
 
   // Print Hi-score
-  EEPROM.write(speedz_minHiAddr,speedz_minutesHiscore);
-  EEPROM.write(speedz_secHiAddr,speedz_secondsHiscore);
-  EEPROM.write(speedz_hunHiAddr,speedz_hundredsHiscore);
+  //EEPROM.write(speedz_minHiAddr,speedz_minutesHiscore);
+  //EEPROM.write(speedz_secHiAddr,speedz_secondsHiscore);
+  //EEPROM.write(speedz_hunHiAddr,speedz_hundredsHiscore);
   lcd.setCursor(0, 1);
   lcd.print("Hiscore");
   sprintf(speedz_minutesHiOut, "%2u", speedz_minutesHiscore);
@@ -688,7 +690,7 @@ void pickzPress() {
     lcd.setCursor(13,1);
     sprintf(pickz_levelHiOut,"%2d",pickz_Hiscore);
     lcd.print(pickz_levelHiOut);
-    EEPROM.write(pickz_levelHiAddr,pickz_Hiscore);
+    //EEPROM.write(pickz_levelHiAddr,pickz_Hiscore);
   }
   delay(1000);
   //attachInterrupt(0, pickzPress, LOW);
@@ -707,12 +709,12 @@ void clearHiscore() {
   lcd.print("Sletter");
   lcd.setCursor(0,1   );
   lcd.print("alle hi-scores...");
-  EEPROM.write(speedz_minHiAddr,99);
-  EEPROM.write(speedz_secHiAddr,99);
-  EEPROM.write(speedz_hunHiAddr,99);
-  EEPROM.write(pickz_levelHiAddr,0);
+  //EEPROM.write(speedz_minHiAddr,99);
+  //EEPROM.write(speedz_secHiAddr,99);
+  //EEPROM.write(speedz_hunHiAddr,99);
+  //EEPROM.write(pickz_levelHiAddr,0);
   if(DEBUG)Serial.write("Sletter hiscores");
-  if(DEBUG)Serial.write(EEPROM.read(speedz_minHiAddr));
+  //if(DEBUG)Serial.write(EEPROM.read(speedz_minHiAddr));
   delay(4000);
 }
 
